@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit- und Integrationstests
+        run: python -m unittest discover tests -v
+      - name: Ende-zu-Ende mit unabhängigem Prüfskript
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          python -c "import sys; sys.path.insert(0, '$GITHUB_WORKSPACE/tests'); from test_tabularium import FODS; open('Liste.fods', 'w', encoding='utf-8').write(FODS.format(b=100, s=120, d='2026-01-01'))"
+          python "$GITHUB_WORKSPACE/tabularium.py" einchecken Liste.fods -n "CI"
+          python "$GITHUB_WORKSPACE/tabularium.py" pruefen
+          python "$GITHUB_WORKSPACE/werkzeuge/pruefe_ohne_tabularium.py" .tabularium

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Startskript für Tabularium (Kommandozeile)
+exec python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tabularium.py" "$@"

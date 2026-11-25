@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+# Archive gehören nicht ins Repository
+.tabularium/
+# Lokale Arbeitsnotizen
+CLAUDE.md
+HANDOVER.md

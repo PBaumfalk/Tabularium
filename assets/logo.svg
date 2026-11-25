@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tabularium">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#2c5c8f"/>
+  <!-- Tafel mit Tabellenraster -->
+  <rect x="13" y="13" width="32" height="36" rx="3.5" fill="#ffffff"/>
+  <rect x="13" y="13" width="32" height="8" rx="3.5" fill="#dbe6f2"/>
+  <rect x="13" y="18" width="32" height="3" fill="#dbe6f2"/>
+  <path d="M13 29.5h32M13 38h32M26 21v28" stroke="#2c5c8f" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+  <!-- Siegel -->
+  <circle cx="45" cy="45" r="10.5" fill="#c8963e" stroke="#2c5c8f" stroke-width="3"/>
+  <path d="M40.6 45.2l3.1 3.1 5.8-6.4" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="tabularium-token" content="__TOKEN__">
+<title>Tabularium</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="kopf">
+  <div class="marke">
+    <img src="/favicon.svg" alt="" width="26" height="26">
+    <span>Tabularium</span>
+  </div>
+  <button class="archivpfad" id="archivpfad" title="Archiv-Ordner"></button>
+  <div class="kopf-aktionen">
+    <button id="btn-pruefen" class="knopf">Archiv prüfen</button>
+    <button id="btn-einst" class="knopf leise">Einstellungen</button>
+  </div>
+</header>
+
+<div id="pruefbanner" class="banner" hidden></div>
+
+<main>
+  <!-- Übersicht -->
+  <section id="ansicht-liste">
+    <div class="raster">
+      <section class="karte" id="sichern" aria-labelledby="h-sichern">
+        <h2 id="h-sichern">Fassung sichern</h2>
+        <div id="ablage" class="ablage" tabindex="0">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          <p><strong>Tabelle hierher ziehen</strong><br>xlsx, xls, ods und weitere</p>
+          <button id="btn-datei" class="knopf">Datei auswählen …</button>
+        </div>
+        <p class="hinweis">Über <em>Datei auswählen</em> merkt sich Tabularium den Speicherort
+          und zeigt später an, wenn die Datei ungesichert geändert wurde.</p>
+
+        <ul id="auswahl" class="auswahl"></ul>
+
+        <div id="sichern-form" hidden>
+          <label>Notiz zur Fassung
+            <input id="f-notiz" type="text" placeholder="z. B. Zahlen nach Besprechung angepasst" maxlength="300">
+          </label>
+          <label>Bearbeitet von
+            <input id="f-bearbeiter" type="text" placeholder="Name" maxlength="80">
+          </label>
+          <div class="zeile">
+            <button id="btn-sichern" class="knopf primaer">Sichern</button>
+            <button id="btn-verwerfen" class="knopf leise">Verwerfen</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="karte" id="dokumente" aria-labelledby="h-dok">
+        <div class="karte-kopf">
+          <h2 id="h-dok">Dokumente</h2>
+          <input id="dok-filter" type="search" placeholder="Suchen …" aria-label="Dokumente durchsuchen">
+        </div>
+        <div id="dok-leer" class="leer" hidden>
+          <p>Noch keine Tabellen im Archiv.</p>
+          <p class="hinweis">Ziehe links eine Datei hinein oder richte in den Einstellungen
+            einen überwachten Ordner ein.</p>
+        </div>
+        <table id="dok-tabelle" class="tabelle">
+          <thead><tr><th>Dokument</th><th class="zahl">Versionen</th><th>Zuletzt gesichert</th><th>Status</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+
+    <section class="karte" id="aktivitaet" aria-labelledby="h-akt">
+      <h2 id="h-akt">Aktivität</h2>
+      <ul id="protokoll" class="protokoll"></ul>
+    </section>
+  </section>
+
+  <!-- Dokument -->
+  <section id="ansicht-dokument" hidden>
+    <a href="#/" class="zurueck">← Alle Dokumente</a>
+    <div class="dok-kopf">
+      <div>
+        <h1 id="d-name"></h1>
+        <p id="d-quelle" class="quelle"></p>
+      </div>
+      <div class="zeile">
+        <button id="d-aktuell" class="knopf" hidden>Mit aktueller Datei vergleichen</button>
+        <button id="d-bericht" class="knopf">Prüfbericht</button>
+      </div>
+    </div>
+
+    <div class="dok-raster">
+      <aside class="karte versionen" aria-label="Versionen">
+        <h2>Versionen</h2>
+        <ol id="d-versionen"></ol>
+      </aside>
+
+      <section class="karte" aria-labelledby="d-titel">
+        <div class="karte-kopf vergleich-kopf">
+          <h2 id="d-titel">Änderungen</h2>
+          <div class="zeile auswahl-vergleich">
+            <label>von <select id="d-von"></select></label>
+            <label>bis <select id="d-bis"></select></label>
+          </div>
+        </div>
+        <div id="d-meta" class="meta-zeile"></div>
+        <div class="zeile filter">
+          <select id="d-blatt" aria-label="Blatt"></select>
+          <input id="d-suche" type="search" placeholder="Zelle oder Inhalt suchen …" aria-label="Änderungen durchsuchen">
+          <span id="d-summe" class="summe"></span>
+        </div>
+        <div id="d-hinweis" class="hinweis-box" hidden></div>
+        <table id="d-tabelle" class="tabelle aend">
+          <thead><tr><th>Zelle</th><th>Art</th><th>Vorher</th><th>Nachher</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="zeile fuss">
+          <button id="d-download" class="knopf leise">Diese Fassung herunterladen</button>
+          <span id="d-hash" class="mono klein"></span>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg-einst" aria-labelledby="einst-titel">
+  <form method="dialog" class="dialog">
+    <div class="dialog-kopf">
+      <h2 id="einst-titel">Einstellungen</h2>
+      <button class="knopf leise" value="zu" aria-label="Schließen">Schließen</button>
+    </div>
+
+    <section>
+      <h3>Zeitstempel</h3>
+      <label class="schalter"><input type="checkbox" id="e-zs"> Jede Fassung mit externem Zeitstempel (RFC 3161) absichern</label>
+      <p class="hinweis">Übertragen wird nur der Prüfwert (Hash), nie der Inhalt. Ohne
+        Zeitstempel könnte jemand mit Vollzugriff das ganze Archiv neu berechnen.</p>
+      <label>Zeitstempelstelle
+        <input type="url" id="e-tsa" spellcheck="false">
+      </label>
+      <p class="hinweis">Voreingestellt ist FreeTSA (kostenlos, nicht qualifiziert). Für
+        Beweiszwecke einen qualifizierten Anbieter nach eIDAS eintragen.</p>
+      <div class="zeile">
+        <button type="button" id="e-zs-speichern" class="knopf">Speichern</button>
+        <button type="button" id="e-zs-nachholen" class="knopf leise">Fehlende Zeitstempel nachholen</button>
+      </div>
+    </section>
+
+    <section>
+      <h3>Überwachte Ordner</h3>
+      <p class="hinweis">Tabellen in diesen Ordnern werden nach jedem Speichern automatisch
+        gesichert, solange Tabularium läuft.</p>
+      <ul id="e-ordner" class="ordnerliste"></ul>
+      <div class="zeile">
+        <button type="button" id="e-ordner-neu" class="knopf">Ordner hinzufügen …</button>
+        <label class="schalter"><input type="checkbox" id="e-rekursiv"> mit Unterordnern</label>
+      </div>
+    </section>
+
+    <section>
+      <h3>Archiv</h3>
+      <p id="e-archiv" class="mono klein"></p>
+      <button type="button" id="e-archiv-wechseln" class="knopf leise">Anderen Archiv-Ordner wählen …</button>
+    </section>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/app.js"></script>
+</body>
+</html>
