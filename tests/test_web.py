@@ -11,7 +11,6 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
-from http.server import ThreadingHTTPServer
 
 HIER = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HIER))
@@ -25,7 +24,7 @@ class TestWeb(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dir = tempfile.mkdtemp(prefix="tabularium-web-")
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), tabularium_web.Handler)
+        cls.server = tabularium_web.LokalerServer(("127.0.0.1", 0), tabularium_web.Handler)
         port = cls.server.server_address[1]
         cls.z = tabularium_web.Zustand(os.path.join(cls.dir, "archiv"), port)
         tabularium_web.Handler.z = cls.z

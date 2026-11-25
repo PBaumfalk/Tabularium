@@ -27,6 +27,7 @@ import time
 import urllib.parse
 import urllib.request
 import webbrowser
+import socketserver
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import tabularium
@@ -719,6 +720,23 @@ class Handler(BaseHTTPRequestHandler):
 # Start
 # --------------------------------------------------------------------------
 
+class LokalerServer(ThreadingHTTPServer):
+    """HTTP-Server nur für 127.0.0.1, ohne Namensauflösung beim Start.
+
+    http.server ruft sonst socket.getfqdn() auf; diese DNS/mDNS-Abfrage kann je
+    nach Netz und Startweg (z. B. über den Finder) viele Sekunden hängen."""
+    daemon_threads = True
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = "127.0.0.1"
+        self.server_port = self.server_address[1]
+
+
+# Direkte Verbindungen ohne System-Proxy (127.0.0.1 nie über einen Proxy)
+_DIREKT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 # Kennung des Benutzerkontos: Ein Doppelklick soll nie die Sitzung eines anderen
 # Benutzers auf demselben Rechner öffnen.
 BENUTZER = hashlib.sha256((getpass.getuser() + "|" + os.path.expanduser("~"))
@@ -730,8 +748,7 @@ def laeuft_auf(port=STANDARD_PORT):
     """URL eines laufenden Tabularium-Servers dieses Benutzers oder None."""
     for p in range(port, port + PORTBEREICH):
         try:
-            with urllib.request.urlopen("http://127.0.0.1:%d/favicon.ico" % p,
-                                        timeout=0.5) as r:
+            with _DIREKT.open("http://127.0.0.1:%d/favicon.ico" % p, timeout=0.5) as r:
                 if r.headers.get("X-Tabularium-Benutzer") == BENUTZER:
                     return "http://127.0.0.1:%d/" % p
         except Exception:
@@ -749,7 +766,7 @@ def starten(archiv=None, port=STANDARD_PORT, browser=True):
     server = None
     for p in range(port, port + PORTBEREICH):
         try:
-            server = ThreadingHTTPServer(("127.0.0.1", p), Handler)
+            server = LokalerServer(("127.0.0.1", p), Handler)
             port = p
             break
         except OSError:

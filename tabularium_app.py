@@ -128,14 +128,13 @@ def selbsttest():
     import json
     import threading
     import urllib.request
-    from http.server import ThreadingHTTPServer
 
     tmp = tempfile.mkdtemp(prefix="tabularium-selbsttest-")
     os.environ["TABULARIUM_KONFIG"] = os.path.join(tmp, "konfig.json")
     import tabularium
     import tabularium_web
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), tabularium_web.Handler)
+    server = tabularium_web.LokalerServer(("127.0.0.1", 0), tabularium_web.Handler)
     port = server.server_address[1]
     z = tabularium_web.Zustand(os.path.join(tmp, "archiv"), port)
     tabularium_web.Handler.z = z
@@ -148,7 +147,7 @@ def selbsttest():
         if daten is not None:
             body = json.dumps(daten).encode()
             kopf["Content-Type"] = "application/json"
-        with urllib.request.urlopen(urllib.request.Request(basis + pfad, body, kopf)) as r:
+        with tabularium_web._DIREKT.open(urllib.request.Request(basis + pfad, body, kopf)) as r:
             inhalt = r.read()
         return json.loads(inhalt) if r.headers.get_content_type() == "application/json" \
             else inhalt.decode("utf-8")

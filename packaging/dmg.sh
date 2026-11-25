@@ -12,7 +12,15 @@ ln -s /Applications "$STUFE/Programme"
 cp LICENSE "$STUFE/Lizenz.txt"
 
 rm -f "$ZIEL"
-hdiutil create -volname "Tabularium ${VERSION}" -srcfolder "$STUFE" \
-  -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov "$ZIEL"
+# hdiutil scheitert auf CI-Rechnern gelegentlich mit "Resource busy" -> wiederholen
+for versuch in 1 2 3 4 5; do
+  if hdiutil create -volname "Tabularium ${VERSION}" -srcfolder "$STUFE" \
+       -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov "$ZIEL"; then
+    break
+  fi
+  [ "$versuch" = 5 ] && exit 1
+  echo "hdiutil fehlgeschlagen, neuer Versuch in 10 s ($versuch/5)"
+  sleep 10
+done
 rm -rf "$STUFE"
 echo "$ZIEL"
