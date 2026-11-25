@@ -74,6 +74,23 @@ jobs:
             $env:Path += ";${env:ProgramFiles(x86)}\Inno Setup 6"
           }
           iscc "/DVersion=${{ steps.v.outputs.version }}" packaging\windows.iss
+      - name: Installer prüfen (still installieren, Selbsttest, deinstallieren)
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist\*-Windows-Setup.exe | Select-Object -First 1
+          $p = Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Installation fehlgeschlagen (Exit-Code $($p.ExitCode))" }
+          $exe = "$env:LOCALAPPDATA\Programs\Tabularium\Tabularium.exe"
+          if (-not (Test-Path $exe)) { throw "Tabularium.exe wurde nicht installiert" }
+          $t = Start-Process $exe -ArgumentList "--selbsttest" -Wait -PassThru
+          Get-Content "$env:LOCALAPPDATA\Tabularium\tabularium.log" -Encoding UTF8 -Tail 16
+          if ($t.ExitCode -ne 0) { throw "Selbsttest der installierten App fehlgeschlagen" }
+          $u = Get-ChildItem "$env:LOCALAPPDATA\Programs\Tabularium\unins*.exe" | Select-Object -First 1
+          $d = Start-Process $u.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait -PassThru
+          if ($d.ExitCode -ne 0) { throw "Deinstallation fehlgeschlagen" }
+          Start-Sleep -Seconds 3
+          if (Test-Path $exe) { throw "Tabularium.exe nach der Deinstallation noch vorhanden" }
+          Write-Host "Installer geprüft: Installation, Selbsttest, Deinstallation"
       - uses: actions/upload-artifact@v4
         with:
           name: windows
