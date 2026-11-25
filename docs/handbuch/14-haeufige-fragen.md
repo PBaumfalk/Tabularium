@@ -59,13 +59,22 @@ Tabularium wurde neu gestartet. Laden Sie die Seite neu (⌘R).
 
 ### „Keine Verbindung zu Tabularium“
 
-Das Terminalfenster wurde geschlossen. Starten Sie Tabularium neu
-(Doppelklick auf `Tabularium.command`).
+Tabularium wurde beendet. Starten Sie es neu.
+
+### Ich sehe kein Programmfenster.
+
+Das ist richtig so. Tabularium läuft im Hintergrund, und seine Oberfläche ist
+der Browser. Ein erneuter Klick auf Tabularium öffnet sie wieder.
+
+### Wie beende ich Tabularium?
+
+Oben rechts auf **Beenden**. Danach werden überwachte Ordner nicht mehr
+gesichert, bis Sie Tabularium wieder starten.
 
 ### Der Dateidialog erscheint nicht.
 
-Er öffnet sich manchmal hinter dem Browserfenster. Schauen Sie im Dock oder mit
-⌘Tab nach dem Eintrag *osascript*.
+Er öffnet sich manchmal hinter dem Browserfenster. Auf dem Mac finden Sie ihn
+mit ⌘Tab unter *osascript*, unter Windows in der Taskleiste oder mit Alt+Tab.
 
 ### Brauche ich Internet?
 

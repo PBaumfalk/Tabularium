@@ -29,7 +29,8 @@ Rechts- oder Steuerberatung.
 | **Eingefügte Zeilen** | Der Vergleich arbeitet nach Zelladresse. Eine eingefügte Zeile erscheint als Änderung aller darunter liegenden Zellen. | Suchfeld nutzen ([Kapitel 4](04-verlauf-und-vergleich.md)) |
 | **Verschlüsselte Dateien** | werden gesichert, aber nicht ausgelesen | Kennwortschutz zum Öffnen vermeiden, Zugriffsschutz über Ordnerrechte |
 | **FreeTSA** | technisch einwandfrei, aber kein qualifizierter Vertrauensdienst | qualifizierten Anbieter wählen ([Kapitel 7](07-zeitstempel.md)) |
-| **Betriebssysteme** | macOS vollständig, Linux ohne Mac-Dialoge und Dateisperren, Windows nicht | – |
+| **Betriebssysteme** | macOS mit Dateisperren. Windows ohne Dateisperren (nur Schreibschutz-Attribut). Unter Windows prüft Tabularium die Signatur der Zeitstempel nur, wenn OpenSSL installiert ist. Linux aus dem Quelltext | Zeitstempel vollständig auf einem Mac oder mit OpenSSL prüfen ([Kapitel 11](11-unabhaengig-pruefen.md)) |
+| **Mehrere gleichzeitig angemeldete Benutzer** | Die Oberfläche ist nur auf diesem Rechner erreichbar, dort aber für jedes angemeldete Benutzerkonto, das die Adresse kennt. Auf Terminalservern oder bei schneller Benutzerumschaltung können andere Benutzer eine laufende Sitzung erreichen. | Tabularium auf Einzelplatzrechnern betreiben oder beenden, wenn andere angemeldet sind |
 
 ## Rechtliche Einordnung
 

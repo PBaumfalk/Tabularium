@@ -4,6 +4,29 @@ Alle nennenswerten Änderungen an Tabularium. Format nach
 [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Versionen nach
 [Semantic Versioning](https://semver.org/lang/de/).
 
+## [1.1.0] – 2026-11-25
+
+### Neu
+- **Installierbare Pakete:** `Tabularium.app` als DMG für Apple Silicon und
+  Intel, Windows-Installer (Inno Setup). Python ist eingebaut
+- **Windows-Unterstützung:** Dateisperre, Dateidialoge, „Im Explorer zeigen“,
+  LibreOffice-Pfade, Zeitstempel ohne OpenSSL
+- Die App läuft ohne Fenster und Terminal. Ein erneuter Klick öffnet die
+  laufende Sitzung. Knopf **Beenden** in der Oberfläche
+- **Autostart** bei der Anmeldung im Hintergrund, damit überwachte Ordner immer
+  gesichert werden
+- Zeitstempel-Anfrage und -Antwort in reinem Python (RFC 3161). Die
+  Signaturprüfung erfolgt mit OpenSSL, wo vorhanden, sonst mit ausdrücklichem
+  Hinweis
+- Selbsttest der fertigen App (`--selbsttest`), automatisch geprüft für jedes
+  Paket
+- Logdatei für die App
+- Tests laufen zusätzlich unter Windows
+
+### Geändert
+- Ein Doppelklick öffnet nur Sitzungen des eigenen Benutzerkontos
+- Das Journal wird auf allen Systemen mit `\n` als Zeilenende geschrieben
+
 ## [1.0.0] – 2026-11-25
 
 Erste veröffentlichte Version.

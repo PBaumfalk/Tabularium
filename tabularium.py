@@ -17,12 +17,12 @@ Aufruf:  python3 tabularium.py --hilfe
 
 import argparse
 import datetime
-import fcntl
 import getpass
 import hashlib
 import html
 import json
 import os
+import pathlib
 import posixpath
 import re
 import shutil
@@ -37,8 +37,17 @@ import zipfile
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 
+try:                                    # macOS, Linux
+    import fcntl
+except ImportError:                     # Windows
+    fcntl = None
+    import msvcrt
+
+# Unter Windows keine Konsolenfenster für Hilfsprogramme aufblitzen lassen
+OHNE_FENSTER = {"creationflags": 0x08000000} if os.name == "nt" else {}
+
 PROGRAMM = "Tabularium"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 ARCHIV_ORDNER = ".tabularium"
 GENESIS = "0" * 64
 
@@ -472,8 +481,12 @@ def lese_ods_wurzel(root):
 # --------------------------------------------------------------------------
 
 def finde_soffice():
-    for p in (shutil.which("soffice"), shutil.which("libreoffice"),
-              "/Applications/LibreOffice.app/Contents/MacOS/soffice"):
+    kandidaten = [shutil.which("soffice"), shutil.which("libreoffice"),
+                  "/Applications/LibreOffice.app/Contents/MacOS/soffice"]
+    for basis in (os.environ.get("ProgramFiles"), os.environ.get("ProgramFiles(x86)")):
+        if basis:
+            kandidaten.append(os.path.join(basis, "LibreOffice", "program", "soffice.exe"))
+    for p in kandidaten:
         if p and os.path.exists(p):
             return p
     return None
@@ -485,11 +498,11 @@ def konvertiere_nach_xlsx(pfad, zielordner):
         raise ArchivFehler("LibreOffice nicht gefunden – für .xls/.xlsb nötig.")
     profil = tempfile.mkdtemp(prefix="tabularium-lo-")
     try:
-        subprocess.run([soffice, "-env:UserInstallation=file://" + profil,
+        subprocess.run([soffice, "-env:UserInstallation=" + pathlib.Path(profil).as_uri(),
                         "--headless", "--convert-to", "xlsx",
                         "--outdir", zielordner, pfad],
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       timeout=300, check=False)
+                       timeout=300, check=False, **OHNE_FENSTER)
     finally:
         shutil.rmtree(profil, ignore_errors=True)
     ziel = os.path.join(zielordner,
@@ -629,12 +642,25 @@ class Archiv:
     # -- Sperre ---------------------------------------------------------------
     @contextmanager
     def sperre(self):
-        with open(os.path.join(self.wurzel, "sperre"), "w") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
+        with open(os.path.join(self.wurzel, "sperre"), "a+") as f:
+            if fcntl:
+                fcntl.flock(f, fcntl.LOCK_EX)
+            else:
+                f.seek(0)
+                while True:
+                    try:
+                        msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+                        break
+                    except OSError:     # LK_LOCK gibt nach ~10 s auf
+                        time.sleep(0.2)
             try:
                 yield
             finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
+                if fcntl:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+                else:
+                    f.seek(0)
+                    msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
 
     # -- Journal ------------------------------------------------------------
     def eintraege(self):
@@ -654,7 +680,7 @@ class Archiv:
 
     def anhaengen(self, eintrag):
         zeile = json.dumps(eintrag, ensure_ascii=False, sort_keys=True) + "\n"
-        with open(self.journal, "a", encoding="utf-8") as f:
+        with open(self.journal, "a", encoding="utf-8", newline="\n") as f:
             f.write(zeile)
             f.flush()
             os.fsync(f.fileno())
@@ -723,11 +749,12 @@ class Archiv:
 # --------------------------------------------------------------------------
 
 def finde_openssl():
-    for p in ("/opt/homebrew/bin/openssl", "/usr/local/bin/openssl",
+    """Pfad zu OpenSSL/LibreSSL oder None (z. B. unter Windows)."""
+    for p in ("/opt/homebrew/bin/openssl", "/usr/local/bin/openssl", "/usr/bin/openssl",
               shutil.which("openssl")):
         if p and os.path.exists(p):
             return p
-    raise ArchivFehler("OpenSSL nicht gefunden.")
+    return None
 
 
 def http_holen(url, ziel, daten_datei=None, inhaltstyp=None):
@@ -740,8 +767,8 @@ def http_holen(url, ziel, daten_datei=None, inhaltstyp=None):
             befehl += ["--data-binary", "@" + daten_datei]
         if inhaltstyp:
             befehl += ["-H", "Content-Type: " + inhaltstyp]
-        r = subprocess.run(befehl + [url], stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, universal_newlines=True)
+        r = subprocess.run(befehl + [url], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                           universal_newlines=True, **OHNE_FENSTER)
         if r.returncode != 0:
             raise ArchivFehler("Abruf fehlgeschlagen (%s): %s" % (url, r.stderr.strip()))
         return
@@ -764,69 +791,170 @@ def tsa_dateien_sicherstellen(archiv, einst):
                 http_holen(url, pfad)
 
 
+# -- DER (ASN.1) in reinem Python: genug für RFC-3161-Anfrage und -Antwort ------
+
+_OID_SHA256 = bytes.fromhex("608648016503040201")
+
+
+def _der_laenge(n):
+    if n < 0x80:
+        return bytes([n])
+    b = n.to_bytes((n.bit_length() + 7) // 8, "big")
+    return bytes([0x80 | len(b)]) + b
+
+
+def _der(tag, inhalt):
+    return bytes([tag]) + _der_laenge(len(inhalt)) + inhalt
+
+
+def _der_int(n):
+    return _der(0x02, n.to_bytes(max(1, (n.bit_length() + 8) // 8), "big"))
+
+
+def _der_lesen(daten, pos):
+    """Liest ein TLV ab pos -> (tag, inhalt_start, inhalt_ende)."""
+    tag = daten[pos]
+    laenge = daten[pos + 1]
+    pos += 2
+    if laenge & 0x80:
+        n = laenge & 0x7F
+        if n == 0 or n > 4:
+            raise ValueError("unbestimmte oder zu große Länge")
+        laenge = int.from_bytes(daten[pos:pos + n], "big")
+        pos += n
+    if pos + laenge > len(daten):
+        raise ValueError("Länge über Datenende")
+    return tag, pos, pos + laenge
+
+
+def _der_kinder(daten, start, ende):
+    teile, pos = [], start
+    while pos < ende:
+        t, s, e = _der_lesen(daten, pos)
+        teile.append((t, s, e))
+        pos = e
+    return teile
+
+
+def tsa_anfrage(hexhash, nonce):
+    """TimeStampReq (RFC 3161) für einen SHA-256-Wert, mit Nonce und certReq."""
+    algorithmus = _der(0x30, _der(0x06, _OID_SHA256) + b"\x05\x00")
+    imprint = _der(0x30, algorithmus + _der(0x04, bytes.fromhex(hexhash)))
+    return _der(0x30, _der_int(1) + imprint + _der_int(nonce) + b"\x01\x01\xff")
+
+
+def tsa_info(roh):
+    """Liest eine TimeStampResp: Status, Hash, Zeit (UTC), Nonce. Prüft KEINE Signatur."""
+    _, s, e = _der_lesen(roh, 0)
+    teile = _der_kinder(roh, s, e)
+    st = _der_kinder(roh, teile[0][1], teile[0][2])[0]
+    status = int.from_bytes(roh[st[1]:st[2]], "big")
+    if status not in (0, 1) or len(teile) < 2:
+        return {"status": status}
+    ci = _der_kinder(roh, teile[1][1], teile[1][2])            # ContentInfo
+    sd = _der_kinder(roh, ci[1][1], ci[1][2])[0]               # [0] -> SignedData
+    sdk = _der_kinder(roh, sd[1], sd[2])
+    eci = _der_kinder(roh, sdk[2][1], sdk[2][2])               # EncapsulatedContentInfo
+    okt = _der_kinder(roh, eci[1][1], eci[1][2])[0]            # [0] -> OCTET STRING
+    tst = roh[okt[1]:okt[2]]
+    _, s, e = _der_lesen(tst, 0)
+    tk = _der_kinder(tst, s, e)                                 # TSTInfo
+    mi = _der_kinder(tst, tk[2][1], tk[2][2])
+    alg = _der_kinder(tst, mi[0][1], mi[0][2])[0]
+    nonce = None
+    for t, a, b in tk[5:]:
+        if t == 0x02:
+            nonce = int.from_bytes(tst[a:b], "big")
+            break
+    zeit = tst[tk[4][1]:tk[4][2]].decode("ascii")
+    m = re.match(r"(\d{14})(?:\.\d+)?Z$", zeit)
+    utc = datetime.datetime.strptime(m.group(1), "%Y%m%d%H%M%S").replace(
+        tzinfo=datetime.timezone.utc) if m else None
+    return {"status": status, "algorithmus": tst[alg[1]:alg[2]],
+            "hash": tst[mi[1][1]:mi[1][2]].hex(), "zeit": utc, "nonce": nonce}
+
+
+def _zeit_text(utc):
+    return utc.astimezone().strftime("%d.%m.%Y %H:%M:%S") if utc else "?"
+
+
 def zeitstempel_holen(archiv, hexhash):
     einst = archiv.einstellungen()
-    openssl = finde_openssl()
+    nonce = int.from_bytes(os.urandom(8), "big") >> 1
     with tempfile.TemporaryDirectory(prefix="tabularium-ts-") as td:
         anfrage = os.path.join(td, "anfrage.tsq")
-        subprocess.run([openssl, "ts", "-query", "-digest", hexhash, "-sha256",
-                        "-cert", "-out", anfrage],
-                       check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with open(anfrage, "wb") as f:
+            f.write(tsa_anfrage(hexhash, nonce))
         antwort = os.path.join(td, "antwort.tsr")
         http_holen(einst["tsa_url"], antwort, daten_datei=anfrage,
                    inhaltstyp="application/timestamp-query")
-        ziel = archiv.zeitstempelpfad(hexhash)
-        shutil.copyfile(antwort, ziel)
+        with open(antwort, "rb") as f:
+            roh = f.read()
+    try:
+        info = tsa_info(roh)
+    except (ValueError, IndexError, UnicodeDecodeError):
+        raise ArchivFehler("Antwort der Zeitstempelstelle nicht lesbar.")
+    if info["status"] not in (0, 1):
+        raise ArchivFehler("Zeitstempelstelle hat abgelehnt (Status %s)." % info["status"])
+    if info["hash"] != hexhash or info["algorithmus"] != _OID_SHA256:
+        raise ArchivFehler("Zeitstempel gehört nicht zur Anfrage.")
+    if info["nonce"] != nonce:
+        raise ArchivFehler("Zeitstempel: Nonce stimmt nicht überein.")
+    ziel = archiv.zeitstempelpfad(hexhash)
+    with open(ziel, "wb") as f:
+        f.write(roh)
     os.chmod(ziel, 0o444)
     tsa_dateien_sicherstellen(archiv, einst)
-    ok, info = zeitstempel_pruefen(archiv, hexhash)
+    ok, text = zeitstempel_pruefen(archiv, hexhash)
     if not ok:
+        os.chmod(ziel, 0o644)
         os.remove(ziel)
-        raise ArchivFehler("Zeitstempel ungültig: " + info)
+        raise ArchivFehler("Zeitstempel ungültig: " + text)
     setze_flag(ziel, stat.UF_IMMUTABLE)
-    return info
+    return text
 
 
 def zeitstempel_zeit(tsr_pfad):
-    r = subprocess.run([finde_openssl(), "ts", "-reply", "-in", tsr_pfad, "-text"],
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       universal_newlines=True)
-    m = re.search(r"Time stamp:\s*(.+)", r.stdout)
-    return tsa_zeit_lesbar(m.group(1).strip()) if m else "?"
+    """Zeit laut Zeitstempelstelle, als Ortszeit (ohne Signaturprüfung)."""
+    try:
+        with open(tsr_pfad, "rb") as f:
+            return _zeit_text(tsa_info(f.read()).get("zeit"))
+    except (OSError, ValueError, IndexError, UnicodeDecodeError):
+        return "?"
 
 
-_MONATE = {m: i for i, m in enumerate(
-    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
-
-
-def tsa_zeit_lesbar(roh):
-    """'Nov 25 20:30:42.123 2026 GMT' -> '25.11.2026 21:30:42' (Ortszeit)."""
-    m = re.match(r"([A-Z][a-z]{2})\s+(\d{1,2})\s+(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?\s+(\d{4})\s+GMT", roh)
-    if not m or m.group(1) not in _MONATE:
-        return roh
-    mon, tag, hh, mm, ss, jahr = m.groups()
-    d = datetime.datetime(int(jahr), _MONATE[mon], int(tag), int(hh), int(mm), int(ss),
-                          tzinfo=datetime.timezone.utc).astimezone()
-    return d.strftime("%d.%m.%Y %H:%M:%S")
+SIGNATUR_UNGEPRUEFT = " (Signatur ungeprüft – OpenSSL fehlt)"
 
 
 def zeitstempel_pruefen(archiv, hexhash):
-    """(ok, Text) – prüft Signatur und dass der Stempel genau diesen Hash deckt."""
+    """(ok, Text): Stempel deckt genau diesen Hash; mit OpenSSL auch die Signatur.
+    ok ist None, wenn kein Zeitstempel vorliegt."""
     pfad = archiv.zeitstempelpfad(hexhash)
     if not os.path.exists(pfad):
         return None, "kein Zeitstempel"
+    with open(pfad, "rb") as f:
+        roh = f.read()
+    try:
+        info = tsa_info(roh)
+    except (ValueError, IndexError, UnicodeDecodeError):
+        info = None
+    if info is not None and (info.get("status") not in (0, 1) or info.get("hash") != hexhash):
+        return False, "gehört nicht zu diesem Eintrag"
+    openssl = finde_openssl()
+    if not openssl:
+        if info is None:
+            return False, "nicht lesbar"
+        return True, _zeit_text(info.get("zeit")) + SIGNATUR_UNGEPRUEFT
     einst = archiv.einstellungen()
     ca = os.path.join(archiv.wurzel, einst["tsa_ca"])
     zert = os.path.join(archiv.wurzel, einst["tsa_zertifikat"])
-    befehl = [finde_openssl(), "ts", "-verify", "-digest", hexhash, "-in", pfad]
-    if os.path.exists(ca):
-        befehl += ["-CAfile", ca]
-    else:
+    if not os.path.exists(ca):
         return False, "CA-Zertifikat der Zeitstempelstelle fehlt (%s)" % ca
+    befehl = [openssl, "ts", "-verify", "-digest", hexhash, "-in", pfad, "-CAfile", ca]
     if os.path.exists(zert):
         befehl += ["-untrusted", zert]
     r = subprocess.run(befehl, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                       universal_newlines=True)
+                       universal_newlines=True, **OHNE_FENSTER)
     if "Verification: OK" in r.stdout:
         return True, zeitstempel_zeit(pfad)
     return False, (r.stdout.strip().splitlines() or ["unbekannter Fehler"])[-1]
@@ -902,6 +1030,11 @@ def pruefe_archiv(archiv, mit_zeitstempeln=True):
         hinweise.append("Keine Zeitstempel vorhanden. Ohne externen Zeitstempel "
                         "kann jemand mit Vollzugriff das gesamte Archiv neu "
                         "berechnen. Einschalten: tabularium einstellungen --zeitstempel an")
+    if zs_ok and mit_zeitstempeln and not finde_openssl():
+        hinweise.append("OpenSSL ist nicht installiert: Die Zeitstempel wurden auf "
+                        "Zugehörigkeit und Zeit geprüft, ihre Signatur aber nicht. "
+                        "Die vollständige Prüfung gelingt auf jedem Mac oder mit "
+                        "OpenSSL (Handbuch, Kapitel 11).")
     return fehler, hinweise, vorher, anzahl, zs_ok
 
 
@@ -1584,6 +1717,12 @@ def parser_bauen():
 
 
 def main(argv=None):
+    for strom in (sys.stdout, sys.stderr):      # Windows-Konsole: ✔ ⏱ → nicht abstürzen
+        if strom is not None and hasattr(strom, "reconfigure"):
+            try:
+                strom.reconfigure(errors="replace")
+            except (ValueError, OSError):
+                pass
     p = parser_bauen()
     args = p.parse_args(argv)
     if not getattr(args, "fn", None):

@@ -18,6 +18,7 @@
   <div class="kopf-aktionen">
     <button id="btn-pruefen" class="knopf">Archiv prüfen</button>
     <button id="btn-einst" class="knopf leise">Einstellungen</button>
+    <button id="btn-beenden" class="knopf leise" title="Tabularium beenden">Beenden</button>
   </div>
 </header>
 
@@ -156,6 +157,12 @@
         <button type="button" id="e-ordner-neu" class="knopf">Ordner hinzufügen …</button>
         <label class="schalter"><input type="checkbox" id="e-rekursiv"> mit Unterordnern</label>
       </div>
+    </section>
+
+    <section>
+      <h3>Programm</h3>
+      <label class="schalter" id="e-autostart-zeile" hidden><input type="checkbox" id="e-autostart"> Bei der Anmeldung im Hintergrund starten (damit überwachte Ordner immer gesichert werden)</label>
+      <p id="e-version" class="hinweis"></p>
     </section>
 
     <section>

@@ -1,100 +1,132 @@
 # 2 — Installation
 
-Tabularium besteht aus wenigen Dateien und braucht nur **Python 3.8 oder
-neuer**. Weitere Pakete, ein Konto oder eine Datenbank sind nicht nötig.
+Tabularium gibt es als fertiges Programm für **Mac** und **Windows**. Python oder
+andere Zusatzprogramme brauchen Sie dafür nicht. Alle Downloads stehen auf der
+Seite **[Releases](https://github.com/PBaumfalk/Tabularium/releases/latest)**.
 
-| Was | Wofür | Nötig? |
-| --- | --- | --- |
-| Python 3.8+ | Tabularium selbst | ja |
-| Ein Browser (Safari, Chrome, Firefox, Edge) | die Oberfläche | ja |
-| [LibreOffice](https://de.libreoffice.org) | nur für alte Formate `.xls`, `.xlsb`, `.xlt` | optional |
-| OpenSSL und curl | nur für Zeitstempel. Beides ist auf dem Mac vorhanden | optional |
+| Ihr Rechner | Datei |
+| --- | --- |
+| Mac mit Apple-Chip (M1, M2, M3, M4 …), etwa ab Ende 2020 | `Tabularium-…-macOS-AppleSilicon.dmg` |
+| Mac mit Intel-Prozessor | `Tabularium-…-macOS-Intel.dmg` |
+| Windows 10 oder 11 (64 Bit) | `Tabularium-…-Windows-Setup.exe` |
+
+Welchen Chip Ihr Mac hat, steht unter  **→ Über diesen Mac** in der Zeile
+*Chip* (Apple) oder *Prozessor* (Intel).
+
+Optional: Für alte Excel-Dateien (`.xls`, `.xlsb`) braucht Tabularium das
+kostenlose [LibreOffice](https://de.libreoffice.org). Für `.xlsx` und `.ods` ist
+es nicht nötig.
 
 ## a) Auf dem Mac
 
-1. Auf der GitHub-Seite von Tabularium oben auf **Code → Download ZIP**
-   klicken.
-2. Die ZIP-Datei im Ordner *Downloads* doppelklicken. Den entstandenen Ordner
-   an einen festen Platz verschieben, zum Beispiel nach *Dokumente*.
-3. Im Ordner doppelt auf **`Tabularium.command`** klicken.
+1. Die passende `.dmg`-Datei herunterladen und doppelklicken.
+2. Im Fenster **Tabularium** auf den Ordner **Programme** ziehen.
+3. Das Fenster schließen und die DMG im Finder auswerfen.
+4. **Tabularium** aus dem Ordner *Programme* oder über Spotlight (⌘ Leertaste,
+   „Tabularium“) starten.
 
-Beim ersten Start kann macOS nachfragen:
+### Beim ersten Start: einmal bestätigen
 
-- **„… kann nicht geöffnet werden, da es von einem nicht verifizierten
-  Entwickler stammt“:** Mit der rechten Maustaste (oder Ctrl + Klick) auf
-  `Tabularium.command` klicken, **Öffnen** wählen und im Dialog nochmals
-  **Öffnen** bestätigen. Danach genügt ein Doppelklick.
-- **„Der Befehl python3 erfordert die Befehlszeilenentwicklerwerkzeuge“:**
-  Auf **Installieren** klicken und warten (einige Minuten). Danach
-  `Tabularium.command` erneut doppelklicken.
+Tabularium ist (noch) nicht bei Apple registriert. Beim ersten Start meldet
+macOS deshalb: *„Tabularium“ kann nicht geöffnet werden, da Apple nicht prüfen
+kann, ob es schädliche Software enthält.* So erlauben Sie den Start:
 
-Es öffnet sich ein **Terminalfenster** mit dieser Meldung:
+1. Die Meldung mit **Fertig** bzw. **OK** schließen.
+2. ** → Systemeinstellungen → Datenschutz & Sicherheit** öffnen.
+3. Ganz nach unten scrollen. Dort steht *„Tabularium“ wurde blockiert …*.
+   Auf **Dennoch öffnen** klicken und mit Ihrem Passwort oder Touch ID
+   bestätigen.
+4. Tabularium erneut starten und im Dialog **Öffnen** wählen.
 
-```
-Tabularium läuft: http://127.0.0.1:8765/
-Archiv: /Users/ihrname/Tabularium/.tabularium
-Dieses Fenster offen lassen. Beenden mit Ctrl+C oder Fenster schließen.
-```
+Das ist nur einmal nötig. Unter macOS 14 und älter genügt auch: rechte
+Maustaste auf Tabularium → **Öffnen** → **Öffnen**.
 
-Gleichzeitig öffnet sich Tabularium im Browser. **Lassen Sie das
-Terminalfenster offen**, solange Sie mit Tabularium arbeiten. Sie können es
-mit dem gelben Knopf ins Dock legen. Schließen Sie es, wird Tabularium beendet.
-Ihre Daten bleiben erhalten.
+### So sieht Tabularium auf dem Mac aus
 
-Ist Tabularium schon gestartet und Sie doppelklicken erneut, öffnet sich nur
-ein weiterer Browser-Tab mit der laufenden Sitzung.
+Tabularium hat kein eigenes Fenster und kein Symbol im Dock. Es öffnet sich
+**im Browser**. Klicken Sie Tabularium erneut an, öffnet sich wieder der
+Browser mit der laufenden Sitzung. Beenden: oben rechts auf **Beenden**.
 
-> **Tipp:** Ziehen Sie `Tabularium.command` in den rechten Teil des Docks
-> (neben den Papierkorb). Dann startet ein Klick im Dock Tabularium.
+## b) Unter Windows
 
-### Startet nichts?
+1. `Tabularium-…-Windows-Setup.exe` herunterladen und doppelklicken.
+2. Meldet Windows *„Der Computer wurde durch Windows geschützt“*: auf
+   **Weitere Informationen** und dann **Trotzdem ausführen** klicken. Die
+   Warnung erscheint, weil das Programm (noch) nicht kostenpflichtig signiert
+   ist.
+3. Den Schritten des Installationsprogramms folgen. Administratorrechte sind
+   nicht nötig. Tabularium wird nur für Ihr Benutzerkonto installiert, auf
+   Wunsch auch für alle.
+4. Am Ende **Tabularium jetzt starten** angehakt lassen.
 
-| Beobachtung | Lösung |
-| --- | --- |
-| Doppelklick öffnet ein Textprogramm | Rechte Maustaste → **Öffnen mit → Terminal** |
-| „Permission denied“ im Terminal | Im Terminal `chmod +x ` eingeben (mit Leerzeichen), die Datei `Tabularium.command` in das Fenster ziehen, Enter |
-| Browser öffnet sich nicht | Adresse aus dem Terminalfenster von Hand im Browser öffnen |
-| Seite zeigt „Sitzung abgelaufen“ | Tabularium wurde neu gestartet. Seite neu laden (⌘R) |
-
-## b) Unter Linux (für IT)
-
-```bash
-git clone https://github.com/PBaumfalk/Tabularium.git
-cd Tabularium
-./tabularium web
-```
-
-Die Oberfläche läuft dann unter `http://127.0.0.1:8765`. Unter Linux gibt es
-die Mac-Dateidialoge („Datei auswählen …“, „Im Finder zeigen“) und die
-Dateisperren (`chflags`) nicht. Dateien ziehen Sie dort in das Ablagefeld.
-Alles andere funktioniert gleich. Die Tests laufen regelmäßig unter macOS und
-Linux.
-
-**Windows** wird derzeit nicht unterstützt.
+Tabularium steht danach im **Startmenü** und auf Wunsch auf dem Desktop. Es läuft
+ohne eigenes Fenster und öffnet sich im Browser. Beenden: oben rechts auf
+**Beenden**.
 
 ## c) Wo das Archiv liegt
 
 Beim ersten Start legt Tabularium den Ordner **Tabularium** in Ihrem
-Benutzerordner an. Darin liegt das eigentliche Archiv im versteckten Ordner
-`.tabularium`. Einen anderen Ort, zum Beispiel ein NAS, wählen Sie unter
-**Einstellungen → Archiv → Anderen Archiv-Ordner wählen …**
-([Kapitel 10](10-archiv-und-sicherung.md)). Tabularium merkt sich die Wahl in
-der Datei `~/.tabularium.json`.
+Benutzerordner an (Mac: `/Users/ihrname/Tabularium`, Windows:
+`C:\Users\ihrname\Tabularium`). Darin liegt das eigentliche Archiv im
+versteckten Ordner `.tabularium`. Einen anderen Ort, etwa ein NAS, wählen Sie
+unter **Einstellungen → Archiv** ([Kapitel 10](10-archiv-und-sicherung.md)).
 
-## d) Aktualisieren
+## d) Bei der Anmeldung starten
 
-1. Tabularium beenden (Terminalfenster schließen).
-2. Die neue Version wie oben herunterladen und den alten Programmordner
-   ersetzen. **Das Archiv ist davon nicht betroffen.** Es liegt in einem
-   eigenen Ordner.
-3. Neu starten.
+Damit überwachte Ordner ([Kapitel 5](05-ordner-ueberwachen.md)) immer gesichert
+werden, auch wenn Sie Tabularium nicht von Hand öffnen: **Einstellungen →
+Programm → Bei der Anmeldung im Hintergrund starten** ankreuzen. Tabularium
+startet dann still mit dem Rechner. Den Browser öffnen Sie bei Bedarf mit einem
+Klick auf Tabularium.
 
-Mit Git genügt `git pull` im Programmordner.
+## e) Aktualisieren
 
-## e) Deinstallieren
+Die neue Version herunterladen und wie oben installieren:
 
-Den Programmordner in den Papierkorb legen. Das Archiv bleibt erhalten. Wie Sie
-auch das Archiv löschen, steht in [Kapitel 10](10-archiv-und-sicherung.md#archiv-löschen).
+- **Mac:** Tabularium beenden und die neue App in *Programme* ziehen. Den Ordner
+  ersetzen lassen.
+- **Windows:** Das neue Setup ausführen. Es ersetzt die alte Version. Eine
+  laufende Sitzung wird dabei beendet.
+
+**Das Archiv ist davon nicht betroffen.** Es liegt in Ihrem Benutzerordner,
+nicht im Programm.
+
+## f) Deinstallieren
+
+- **Mac:** Tabularium beenden und aus *Programme* in den Papierkorb legen. War
+  der Autostart eingeschaltet, schalten Sie ihn vorher in den Einstellungen aus.
+  Sonst die Datei `~/Library/LaunchAgents/de.tabularium.app.plist` löschen.
+- **Windows:** **Einstellungen → Apps → Tabularium → Deinstallieren**. Der
+  Autostart wird dabei mit entfernt.
+
+Ihr Archiv bleibt in beiden Fällen erhalten. Wie Sie auch das Archiv löschen,
+steht in [Kapitel 10](10-archiv-und-sicherung.md#archiv-löschen).
+
+## g) Aus dem Quelltext (für IT, Linux)
+
+Wer Tabularium unter Linux betreiben, die [Kommandozeile](09-kommandozeile.md)
+nutzen oder den Quelltext prüfen will, braucht nur Python 3.8 oder neuer:
+
+```bash
+git clone https://github.com/PBaumfalk/Tabularium.git
+cd Tabularium
+./tabularium web                 # Weboberfläche
+./tabularium --hilfe             # Kommandozeile
+```
+
+Unter macOS startet ein Doppelklick auf `Tabularium.command` im
+Quelltextordner die Oberfläche mit Terminalfenster. Unter Linux erscheint die
+Dateiauswahl über `zenity`, falls installiert. Die Mac-Dateisperren gibt es dort
+nicht.
+
+## Startet nichts?
+
+| Beobachtung | Lösung |
+| --- | --- |
+| Nach dem Start passiert nichts | Einige Sekunden warten. Tabularium öffnet den Standardbrowser. Ist keiner eingestellt, `http://127.0.0.1:8765` von Hand öffnen. |
+| Browser zeigt „Sitzung abgelaufen“ | Tabularium wurde neu gestartet. Seite neu laden (⌘R bzw. F5). |
+| Browser zeigt „Keine Verbindung“ | Tabularium wurde beendet. Erneut starten. |
+| Fehlermeldung beim Start | Details stehen in der Logdatei: Mac `~/Library/Logs/Tabularium/tabularium.log`, Windows `%LOCALAPPDATA%\Tabularium\tabularium.log` |
 
 ---
 

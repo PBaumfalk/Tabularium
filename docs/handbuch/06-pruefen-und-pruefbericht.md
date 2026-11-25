@@ -74,9 +74,10 @@ Werte stehen im Bericht so, wie sie gespeichert sind (etwa `892.5`,
 
 ### Als PDF speichern
 
-Im Browser **Ablage → Drucken** (⌘P) wählen, dann unten links **PDF → Als PDF
-sichern**. Der Bericht ist für den Druck gestaltet und bricht Tabellen
-sauber um.
+Im Browser **Drucken** wählen (Mac ⌘P, Windows Strg+P). Auf dem Mac unten links
+**PDF → Als PDF sichern**, unter Windows als Drucker **Microsoft Print to PDF**
+bzw. **Als PDF speichern**. Der Bericht ist für den Druck gestaltet und bricht
+Tabellen sauber um.
 
 > **Tipp für die Akte:** Sichern Sie das PDF mit Datum im Namen, zum Beispiel
 > „2026-11-25 Prüfbericht Honorarübersicht.pdf“. Wer den Bericht später erneut

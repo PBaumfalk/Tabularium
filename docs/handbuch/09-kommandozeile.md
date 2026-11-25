@@ -1,8 +1,11 @@
 # 9 — Kommandozeile
 
 Alles, was die Oberfläche kann, geht auch im Terminal, dazu einige Extras für
-Skripte und Automatisierung. Die Befehle starten Sie im Programmordner mit
-`./tabularium` oder von überall mit `python3 /pfad/zu/tabularium.py`.
+Skripte und Automatisierung. Die Kommandozeile gehört zur Quelltextfassung
+([Kapitel 2, Abschnitt g](02-installation.md#g-aus-dem-quelltext-für-it-linux)),
+nicht zur installierten App. Beide können dasselbe Archiv nutzen. Die Befehle
+starten Sie im Programmordner mit `./tabularium` (Windows:
+`py tabularium.py`) oder von überall mit `python3 /pfad/zu/tabularium.py`.
 
 > **Tipp:** Damit `tabularium` überall funktioniert, legen Sie einmalig eine
 > Verknüpfung an:

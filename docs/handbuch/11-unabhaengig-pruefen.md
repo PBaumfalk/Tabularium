@@ -22,7 +22,8 @@ einem USB-Stick. Alles Folgende ändert nichts am Archiv.
 ## 1. Eine einzelne Datei
 
 ```bash
-shasum -a 256 "Honorarübersicht 2026.xlsx"
+shasum -a 256 "Honorarübersicht 2026.xlsx"          # Mac, Linux
+certutil -hashfile "Honorarübersicht 2026.xlsx" SHA256   # Windows
 ```
 
 Die ausgegebene Zeichenfolge suchen Sie im Journal:

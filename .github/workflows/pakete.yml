@@ -1,0 +1,111 @@
+name: Pakete
+
+# Baut die installierbaren Pakete (macOS-DMG, Windows-Installer), prüft sie mit dem
+# eingebauten Selbsttest und hängt sie bei einem Versions-Tag (v1.2.3) an ein Release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    name: macOS · ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: AppleSilicon
+          - runner: macos-15-intel
+            arch: Intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Version
+        id: v
+        run: echo "version=$(python -c 'import tabularium; print(tabularium.VERSION)')" >> "$GITHUB_OUTPUT"
+      - name: PyInstaller
+        run: |
+          python -m pip install "pyinstaller>=6.10,<7"
+          pyinstaller --noconfirm packaging/tabularium.spec
+      - name: Selbsttest der App
+        run: dist/Tabularium.app/Contents/MacOS/Tabularium --selbsttest
+      - name: DMG
+        run: packaging/dmg.sh "${{ steps.v.outputs.version }}" "${{ matrix.arch }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Version
+        id: v
+        shell: bash
+        run: echo "version=$(python -c 'import tabularium; print(tabularium.VERSION)')" >> "$GITHUB_OUTPUT"
+      - name: PyInstaller
+        run: |
+          python -m pip install "pyinstaller>=6.10,<7"
+          pyinstaller --noconfirm packaging/tabularium.spec
+      - name: Selbsttest der App
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\Tabularium\Tabularium.exe" -ArgumentList "--selbsttest" -Wait -PassThru
+          Get-Content "$env:LOCALAPPDATA\Tabularium\tabularium.log" -Encoding UTF8 -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { throw "Selbsttest fehlgeschlagen (Exit-Code $($p.ExitCode))" }
+      - name: Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          if (-not (Get-Command iscc -ErrorAction SilentlyContinue)) {
+            choco install innosetup --no-progress -y
+            $env:Path += ";${env:ProgramFiles(x86)}\Inno Setup 6"
+          }
+          iscc "/DVersion=${{ steps.v.outputs.version }}" packaging\windows.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.exe
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: [macos, windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: pakete
+          merge-multiple: true
+      - name: Versionshinweise aus dem Änderungsprotokoll
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {an=1; next} /^## \[/ {an=0} an' CHANGELOG.md > hinweise.md
+          cat >> hinweise.md <<'EOF'
+
+          ---
+
+          **Installation:** Mac → `…-macOS-AppleSilicon.dmg` (M1 bis M4) bzw. `…-macOS-Intel.dmg`, Windows → `…-Windows-Setup.exe`.
+          Die Pakete sind nicht signiert. Beim ersten Start ist deshalb eine einmalige Bestätigung nötig, siehe [Handbuch, Kapitel 2](https://github.com/PBaumfalk/Tabularium/blob/main/docs/handbuch/02-installation.md).
+          EOF
+          sed -i 's/^          //' hinweise.md
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" pakete/* \
+            --title "Tabularium ${GITHUB_REF_NAME#v}" --notes-file hinweise.md

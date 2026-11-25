@@ -5,6 +5,8 @@
 [![Tests](https://github.com/PBaumfalk/Tabularium/actions/workflows/tests.yml/badge.svg)](https://github.com/PBaumfalk/Tabularium/actions/workflows/tests.yml)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)](https://www.python.org)
+[![Neueste Version](https://img.shields.io/github/v/release/PBaumfalk/Tabularium?label=Version)](https://github.com/PBaumfalk/Tabularium/releases/latest)
+[![Mac & Windows](https://img.shields.io/badge/macOS%20%C2%B7%20Windows-Installer-blue)](https://github.com/PBaumfalk/Tabularium/releases/latest)
 [![Abhängigkeiten: keine](https://img.shields.io/badge/Abh%C3%A4ngigkeiten-keine-brightgreen.svg)](#für-entwickler)
 
 **Excel- und LibreOffice-Tabellen revisionssicher ablegen: jede Fassung, jede
@@ -23,8 +25,8 @@ Zeitstempelstelle den Zeitpunkt jeder Fassung. Wer nachträglich auch nur ein
 Byte ändert, eine Fassung löscht oder eine einschiebt, fällt bei der Prüfung
 auf.
 
-Tabularium läuft auf Ihrem eigenen Mac und braucht keine Cloud, kein Abo und
-kein Zusatzpaket. An die Zeitstempelstelle geht nur der Fingerabdruck, nie der
+Tabularium läuft auf Ihrem eigenen Mac oder Windows-PC und braucht keine Cloud,
+kein Abo und kein Zusatzpaket. An die Zeitstempelstelle geht nur der Fingerabdruck, nie der
 Inhalt Ihrer Tabellen.
 
 *Tabularium* hieß das Staatsarchiv des antiken Rom am Kapitol. Dort lagen die
@@ -37,7 +39,8 @@ leistet Tabularium für Ihre Tabellen.
 > against the previous version, and all events are recorded in an append-only,
 > hash-chained journal. Optional RFC 3161 timestamps from an external TSA anchor
 > each entry. It offers a local web UI (drag & drop, version history, cell-level
-> diff, folder watching, printable audit report) and a CLI. It is written in pure
+> diff, folder watching, printable audit report), a CLI, and ready-to-install
+> packages for macOS (DMG) and Windows (installer). It is written in pure
 > Python 3.8+ with the standard library only, and the archive can be verified
 > independently with `shasum`, `openssl` and a few lines of Python. The UI and
 > documentation are in German.
@@ -57,31 +60,43 @@ Gutachter oder Betriebsprüfer.
 
 ## Installation
 
-Tabularium braucht nur **Python 3.8 oder neuer**, das auf dem Mac in der Regel
-schon vorhanden ist. Weitere Pakete sind nicht nötig. Für alte `.xls`-Dateien
-wird zusätzlich das kostenlose [LibreOffice](https://de.libreoffice.org)
-verwendet.
+**[⬇ Tabularium herunterladen](https://github.com/PBaumfalk/Tabularium/releases/latest)**:
+fertige Pakete für Mac und Windows. Python oder andere Zusatzprogramme sind
+nicht nötig.
+
+| Ihr Rechner | Datei |
+| --- | --- |
+| 🍎 Mac mit Apple-Chip (M1 bis M4) | `Tabularium-…-macOS-AppleSilicon.dmg` |
+| 🍎 Mac mit Intel-Prozessor | `Tabularium-…-macOS-Intel.dmg` |
+| 🪟 Windows 10/11 (64 Bit) | `Tabularium-…-Windows-Setup.exe` |
 
 <details>
-<summary><strong>🍎 Auf dem Mac</strong> (ohne IT-Kenntnisse)</summary>
+<summary><strong>🍎 Auf dem Mac</strong></summary>
 
-1. Auf dieser Seite oben auf **Code → Download ZIP** klicken und die ZIP-Datei
-   entpacken, zum Beispiel in den Ordner *Programme* oder *Dokumente*.
-2. Im entpackten Ordner doppelt auf **`Tabularium.command`** klicken.
-   - Meldet macOS, dass die Datei von einem nicht verifizierten Entwickler stammt:
-     mit der rechten Maustaste auf die Datei klicken, **Öffnen** wählen und
-     bestätigen. Das ist nur beim ersten Mal nötig.
-   - Fragt macOS nach den *Befehlszeilenentwicklerwerkzeugen*: **Installieren**
-     klicken, warten, dann erneut doppelklicken. Das installiert Python.
-3. Es öffnet sich ein Terminalfenster, das Sie offen lassen, und Tabularium im
-   Browser. Fertig.
+1. DMG öffnen und **Tabularium** auf **Programme** ziehen.
+2. Tabularium starten. Es öffnet sich im Browser, ohne eigenes Fenster.
+3. **Beim ersten Start** meldet macOS, dass Apple die App nicht prüfen konnte,
+   denn sie ist (noch) nicht notarisiert. Unter ** → Systemeinstellungen →
+   Datenschutz & Sicherheit** ganz unten **Dennoch öffnen** klicken. Das ist
+   nur einmal nötig.
 
-Ihr Archiv liegt dann im Ordner **Tabularium** in Ihrem Benutzerordner.
-Ausführlich: [Handbuch, Kapitel 2](docs/handbuch/02-installation.md).
+Ausführlich: [Handbuch, Kapitel 2](docs/handbuch/02-installation.md#a-auf-dem-mac).
 </details>
 
 <details>
-<summary><strong>🐧 Linux und Kommandozeile</strong> (für IT)</summary>
+<summary><strong>🪟 Unter Windows</strong></summary>
+
+1. `Tabularium-…-Windows-Setup.exe` ausführen. Meldet Windows *„Der Computer
+   wurde durch Windows geschützt“*: **Weitere Informationen → Trotzdem
+   ausführen**.
+2. Den Installationsschritten folgen. Administratorrechte sind nicht nötig.
+3. Tabularium startet aus dem Startmenü und öffnet sich im Browser.
+
+Ausführlich: [Handbuch, Kapitel 2](docs/handbuch/02-installation.md#b-unter-windows).
+</details>
+
+<details>
+<summary><strong>🐧 Linux und Kommandozeile</strong> (für IT, aus dem Quelltext)</summary>
 
 ```bash
 git clone https://github.com/PBaumfalk/Tabularium.git
@@ -91,11 +106,14 @@ cd Tabularium
 ./tabularium pruefen
 ```
 
-Die Weboberfläche ist nur von diesem Rechner aus erreichbar (127.0.0.1). Unter
-Linux fehlen die Mac-Dateidialoge und die Dateisperren (`chflags`); Dateien
-ziehen Sie dort in das Ablagefeld. Windows wird derzeit nicht unterstützt.
-Alle Befehle: [Kapitel 9](docs/handbuch/09-kommandozeile.md).
+Braucht nur Python 3.8 oder neuer. Alle Befehle:
+[Kapitel 9](docs/handbuch/09-kommandozeile.md).
 </details>
+
+Ihr Archiv liegt im Ordner **Tabularium** in Ihrem Benutzerordner und bleibt bei
+Updates und beim Deinstallieren erhalten. Für alte `.xls`-Dateien nutzt
+Tabularium zusätzlich das kostenlose [LibreOffice](https://de.libreoffice.org),
+falls installiert.
 
 ## Funktionen im Überblick
 
@@ -103,7 +121,7 @@ Alle Befehle: [Kapitel 9](docs/handbuch/09-kommandozeile.md).
 | --- | --- |
 | ![Startseite mit Dokumentliste](docs/screenshots/start.png) | ![Einstellungen mit Zeitstempel und überwachten Ordnern](docs/screenshots/einstellungen.png) |
 
-- **Fassungen sichern** per Ziehen und Ablegen oder über den Mac-Dateidialog,
+- **Fassungen sichern** per Ziehen und Ablegen oder über den Dateidialog,
   mit Notiz und Namen der bearbeitenden Person
   ([Kapitel 3](docs/handbuch/03-erste-fassung.md))
 - **Zellvergleich:** Was ist neu, geändert, gelöscht? Mit Vorher und Nachher,
@@ -112,7 +130,8 @@ Alle Befehle: [Kapitel 9](docs/handbuch/09-kommandozeile.md).
   ([Kapitel 4](docs/handbuch/04-verlauf-und-vergleich.md))
 - **„Geändert – nicht gesichert“:** Tabularium merkt sich den Speicherort und
   zeigt an, wenn eine Datei seit der letzten Sicherung verändert wurde
-- **Ordner überwachen:** Jede gespeicherte Änderung wird automatisch gesichert
+- **Ordner überwachen:** Jede gespeicherte Änderung wird automatisch gesichert,
+  auf Wunsch ab der Anmeldung im Hintergrund
   ([Kapitel 5](docs/handbuch/05-ordner-ueberwachen.md))
 - **Archiv prüfen und Prüfbericht:** grün oder rot auf einen Blick. Der
   druckfertige Bericht für die Akte enthält alle Fassungen, Änderungen,
@@ -127,6 +146,7 @@ Alle Befehle: [Kapitel 9](docs/handbuch/09-kommandozeile.md).
   gesichert
 - **Kommandozeile** für Skripte und Automatisierung
   ([Kapitel 9](docs/handbuch/09-kommandozeile.md))
+- **Mac und Windows** als fertige Pakete, Linux aus dem Quelltext
 - **Hell und dunkel**, folgt der Systemeinstellung
 
 | Prüfbericht für die Akte | Dunkler Modus |
@@ -193,7 +213,9 @@ Aufbau und das Archivformat beschreibt [Kapitel 12](docs/handbuch/12-technik.md)
 | Datei | Inhalt |
 | --- | --- |
 | [`tabularium.py`](tabularium.py) | Kern und Kommandozeile: Auslesen (xlsx/ods), Vergleich, Archiv, Journal, Zeitstempel, Prüfbericht |
-| [`tabularium_web.py`](tabularium_web.py) | Lokaler Webserver mit JSON-API und Ordnerüberwachung |
+| [`tabularium_web.py`](tabularium_web.py) | Lokaler Webserver mit JSON-API, Ordnerüberwachung, Systemdialogen und Autostart |
+| [`tabularium_app.py`](tabularium_app.py) | Startpunkt der installierbaren App, mit Selbsttest |
+| [`packaging/`](packaging) | PyInstaller, DMG und Windows-Installer (Inno Setup) |
 | [`web/`](web) | Oberfläche: HTML, CSS, Vanilla-JavaScript, ohne Framework |
 | [`tests/`](tests) | Unit- und Integrationstests, darunter Manipulationsversuche und die Sicherheit der API |
 
@@ -201,9 +223,10 @@ Aufbau und das Archivformat beschreibt [Kapitel 12](docs/handbuch/12-technik.md)
 python3 -m unittest discover tests -v
 ```
 
-Die Tests laufen in GitHub Actions auf macOS und Linux. Ist LibreOffice
-installiert, prüfen sie zusätzlich, dass ods, xlsx und xls dasselbe
-Zellabbild liefern. Änderungen stehen im [Änderungsprotokoll](CHANGELOG.md).
+Die Tests laufen in GitHub Actions auf macOS, Linux und Windows. Ist
+LibreOffice installiert, prüfen sie zusätzlich, dass ods, xlsx und xls dasselbe
+Zellabbild liefern. Die Pakete baut und prüft der Workflow
+[`pakete.yml`](.github/workflows/pakete.yml) bei jedem Versions-Tag. Änderungen stehen im [Änderungsprotokoll](CHANGELOG.md).
 
 ## Lizenz
 

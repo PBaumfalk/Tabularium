@@ -275,7 +275,8 @@ async function dokumentOeffnen(name, version) {
   const q = $("#d-quelle");
   q.replaceChildren();
   if (d.quelle && d.quelle_existiert) {
-    q.append(d.quelle_kurz || d.quelle, h("button", { class: "knopf leise klein", text: "Im Finder zeigen",
+    const manager = (zustand.status && zustand.status.dateimanager) || "Finder";
+    q.append(d.quelle_kurz || d.quelle, h("button", { class: "knopf leise klein", text: "Im " + manager + " zeigen",
       onclick: (ev) => mitKnopf(ev.currentTarget, () => api("/api/finder", { methode: "POST", daten: { pfad: d.quelle } })) }));
   } else if (d.quelle) {
     q.textContent = (d.quelle_kurz || d.quelle) + (d.quelle.startsWith("/") ? " (nicht mehr vorhanden)" : "");
@@ -435,6 +436,9 @@ function zeichneAenderungen() {
 
 function zeichneEinstellungen() {
   const s = zustand.status;
+  $("#e-version").textContent = `Tabularium ${s.version}` + (s.app ? " · installierte App" : "");
+  $("#e-autostart-zeile").hidden = s.autostart === null || s.autostart === undefined;
+  $("#e-autostart").checked = !!s.autostart;
   $("#e-zs").checked = !!s.einstellungen.zeitstempel;
   $("#e-tsa").value = s.einstellungen.tsa_url || "";
   $("#e-archiv").textContent = s.archiv_kurz || s.archiv;
@@ -561,10 +565,25 @@ function einrichten() {
     location.href = "/api/datei?name=" + encodeURIComponent(zustand.dok.name) + "&version=" + v + "&token=" + encodeURIComponent(TOKEN);
   });
 
+  $("#e-autostart").addEventListener("change", (ev) => mitKnopf(ev.currentTarget, async () => {
+    const r = await api("/api/autostart", { methode: "POST", daten: { aktiv: ev.currentTarget.checked } });
+    ev.currentTarget.checked = !!r.aktiv;
+    meldung(r.aktiv ? "Tabularium startet ab jetzt bei der Anmeldung." : "Autostart ausgeschaltet.");
+  }));
+
+  $("#btn-beenden").addEventListener("click", (ev) => mitKnopf(ev.currentTarget, async () => {
+    await api("/api/beenden", { methode: "POST", daten: {} });
+    clearInterval(zustand.takt);
+    document.body.replaceChildren(h("main", { class: "beendet" },
+      h("h1", { text: "Tabularium wurde beendet" }),
+      h("p", { text: "Ihre Daten sind gesichert. Überwachte Ordner werden erst nach dem nächsten Start wieder gesichert." }),
+      h("p", { class: "hinweis", text: "Zum Neustart Tabularium wieder öffnen. Dieses Fenster können Sie schließen." })));
+  }));
+
   window.addEventListener("hashchange", route);
   if (location.hash.startsWith("#/dok/")) statusLaden();   // Kopfzeile auch in der Dokumentansicht
   // Übersicht aktuell halten (Ordnerüberwachung, geänderte Dateien)
-  setInterval(() => {
+  zustand.takt = setInterval(() => {
     if (document.visibilityState === "visible" && !$("#ansicht-liste").hidden && !$("#dlg-einst").open) statusLaden();
   }, 5000);
   route();

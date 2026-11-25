@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(HIER))
 os.environ["TABULARIUM_KONFIG"] = os.path.join(tempfile.gettempdir(), "tabularium-test-konfig.json")
 import tabularium  # noqa: E402
 import tabularium_web  # noqa: E402
-from test_tabularium import FODS, entsperren  # noqa: E402
+from test_tabularium import FODS, wegraeumen  # noqa: E402
 
 
 class TestWeb(unittest.TestCase):
@@ -35,8 +35,7 @@ class TestWeb(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.server.shutdown()
-        entsperren(cls.dir)
-        shutil.rmtree(cls.dir, ignore_errors=True)
+        wegraeumen(cls.dir)
 
     def anfrage(self, pfad, daten=None, token=True, kopf=None, roh=None):
         h = dict(kopf or {})
@@ -104,6 +103,11 @@ class TestWeb(unittest.TestCase):
         self.assertEqual(json.loads(r)["ergebnisse"][0]["datei"], "Grün.fods")
         code, r = self.anfrage("/api/hochladen", roh=b"x", kopf={"X-Dateiname": "boese.exe"})
         self.assertEqual(code, 400)
+
+    def test_6b_benutzerkennung(self):
+        req = urllib.request.Request(self.basis + "/favicon.ico")
+        with urllib.request.urlopen(req) as r:
+            self.assertEqual(r.headers.get("X-Tabularium-Benutzer"), tabularium_web.BENUTZER)
 
     def test_6_finder_nur_bekannte_pfade(self):
         code, _ = self.anfrage("/api/finder", daten={"pfad": "/etc/passwd"})

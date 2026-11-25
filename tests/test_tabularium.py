@@ -4,6 +4,7 @@ import contextlib
 import io
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -40,9 +41,20 @@ FODS = """<?xml version="1.0" encoding="UTF-8"?>
 
 
 def entsperren(pfad):
-    """Hebt die macOS-Schutzflags auf (auf Linux gibt es sie nicht)."""
+    """Hebt Schutzflags (macOS) und Schreibschutz (alle Systeme) auf."""
     if shutil.which("chflags"):
         subprocess.run(["chflags", "-R", "nouchg,nouappnd", pfad])
+    for wurzel, dirs, dateien in os.walk(pfad):
+        for n in dirs + dateien:
+            try:
+                os.chmod(os.path.join(wurzel, n), stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+            except OSError:
+                pass
+
+
+def wegraeumen(pfad):
+    entsperren(pfad)
+    shutil.rmtree(pfad, ignore_errors=True)
 
 
 def leise(fn, *a, **kw):
@@ -57,8 +69,7 @@ class Basis(unittest.TestCase):
         self.archiv.einstellungen_speichern(dict(tabularium.STANDARD_EINSTELLUNGEN))
 
     def tearDown(self):
-        entsperren(self.dir)
-        shutil.rmtree(self.dir, ignore_errors=True)
+        wegraeumen(self.dir)
 
     def fods(self, name, b, s, d):
         pfad = os.path.join(self.dir, name)
@@ -68,7 +79,6 @@ class Basis(unittest.TestCase):
 
     def entsperren(self):
         entsperren(self.archiv.wurzel)
-        subprocess.run(["chmod", "-R", "u+w", self.archiv.wurzel])
 
 
 class TestAuslesen(Basis):
@@ -163,6 +173,50 @@ class TestArchiv(Basis):
         self.assertIsNone(e["zellen_sha256"])
         self.assertIn("nicht lesbar", e["warnung"])
         self.assertEqual(tabularium.pruefe_archiv(self.archiv)[0], [])
+
+
+class TestZeitstempel(unittest.TestCase):
+    """Echte Antwort von FreeTSA (tests/daten/freetsa.tsr) – ohne Netz und ohne OpenSSL."""
+    HASH = "6a4583b3e22470e4da2b641eceedaa102d876cce4acbd34b554c23872d75f918"
+
+    def test_antwort_lesen(self):
+        with open(os.path.join(HIER, "daten", "freetsa.tsr"), "rb") as f:
+            info = tabularium.tsa_info(f.read())
+        self.assertEqual(info["status"], 0)
+        self.assertEqual(info["hash"], self.HASH)
+        self.assertEqual(info["algorithmus"], tabularium._OID_SHA256)
+        self.assertEqual(info["zeit"].strftime("%Y-%m-%d %H:%M:%S"), "2026-11-25 20:32:42")
+        self.assertTrue(info["nonce"])
+
+    def test_anfrage_aufbau(self):
+        roh = tabularium.tsa_anfrage("ab" * 32, 0x1234567890ABCDEF)
+        t, s, e = tabularium._der_lesen(roh, 0)
+        self.assertEqual((t, e), (0x30, len(roh)))
+        teile = tabularium._der_kinder(roh, s, e)
+        self.assertEqual([x[0] for x in teile], [0x02, 0x30, 0x02, 0x01])
+        self.assertEqual(roh[teile[2][1]:teile[2][2]], bytes.fromhex("1234567890abcdef"))
+        self.assertIn(bytes.fromhex("ab" * 32), roh)
+
+    def test_ganzzahl_mit_hohem_bit(self):
+        self.assertEqual(tabularium._der_int(255), b"\x02\x02\x00\xff")
+        self.assertEqual(tabularium._der_int(127), b"\x02\x01\x7f")
+
+
+class TestDokumentname(Basis):
+    def test_gleicher_name_anderer_ordner(self):
+        a = os.path.join(self.dir, "a")
+        b = os.path.join(self.dir, "b")
+        os.makedirs(a)
+        os.makedirs(b)
+        pa = os.path.join(a, "Liste.fods")
+        pb = os.path.join(b, "Liste.fods")
+        for p in (pa, pb):
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(FODS.format(b=1, s=2, d="2026-01-01"))
+        leise(tabularium.einchecken_datei, self.archiv, pa,
+              name=tabularium.dokumentname_fuer(self.archiv, pa))
+        self.assertEqual(tabularium.dokumentname_fuer(self.archiv, pa), "Liste.fods")
+        self.assertEqual(tabularium.dokumentname_fuer(self.archiv, pb), "Liste.fods (b)")
 
 
 @unittest.skipUnless(tabularium.finde_soffice(), "LibreOffice nicht installiert")

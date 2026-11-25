@@ -12,7 +12,10 @@ Start:  python3 tabularium.py web     (oder Doppelklick auf Tabularium.command)
 """
 
 import collections
+import getpass
+import hashlib
 import json
+import plistlib
 import os
 import secrets
 import shutil
@@ -28,7 +31,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import tabularium
 
-HIER = os.path.dirname(os.path.abspath(__file__))
+# In der fertigen App (PyInstaller) liegen die Dateien unter sys._MEIPASS
+HIER = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(HIER, "web")
 KONFIG = os.environ.get("TABULARIUM_KONFIG") or os.path.expanduser("~/.tabularium.json")
 STANDARD_ORDNER = os.path.expanduser("~/Tabularium")
@@ -59,6 +63,21 @@ def konfig_speichern(daten):
         json.dump(k, f, ensure_ascii=False, indent=2)
 
 
+# --------------------------------------------------------------------------
+# Betriebssystem: Dialoge, Dateimanager, Autostart
+# --------------------------------------------------------------------------
+
+SYSTEM = "mac" if sys.platform == "darwin" else "windows" if os.name == "nt" else "linux"
+OHNE_FENSTER = tabularium.OHNE_FENSTER
+DATEIMANAGER = {"mac": "Finder", "windows": "Explorer", "linux": "Dateimanager"}[SYSTEM]
+_ENDUNGEN = ";".join("*" + e for e in sorted(tabularium.ALLE_FORMATE))
+
+
+def app_modus():
+    """True, wenn Tabularium als fertige App (PyInstaller) läuft."""
+    return bool(getattr(sys, "frozen", False))
+
+
 def osascript(skript):
     """Führt AppleScript aus; None bei Abbruch durch den Nutzer."""
     r = subprocess.run(["osascript", "-e", skript], stdout=subprocess.PIPE,
@@ -68,6 +87,142 @@ def osascript(skript):
             return None
         raise tabularium.ArchivFehler("Dialog fehlgeschlagen: %s" % r.stderr.strip())
     return r.stdout
+
+
+def powershell(skript):
+    """Führt ein PowerShell-Skript aus (Windows-Dialoge); liefert UTF-8-Text."""
+    skript = "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8\n" + skript
+    r = subprocess.run(["powershell", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass",
+                        "-Command", skript],
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE, **OHNE_FENSTER)
+    if r.returncode != 0:
+        raise tabularium.ArchivFehler("Dialog fehlgeschlagen: %s" %
+                                      r.stderr.decode("utf-8", "replace").strip())
+    return r.stdout.decode("utf-8", "replace")
+
+
+def _ps(text):
+    return "'" + text.replace("'", "''") + "'"
+
+
+def zenity(argumente):
+    if not shutil.which("zenity"):
+        raise tabularium.ArchivFehler("Dateiauswahl ist hier nicht verfügbar – bitte die "
+                                      "Datei in das Feld ziehen.")
+    r = subprocess.run(["zenity"] + argumente, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE, universal_newlines=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def datei_dialog(titel):
+    """Systemdialog zur Dateiauswahl -> Liste von Pfaden (leer bei Abbruch)."""
+    if SYSTEM == "mac":
+        aus = osascript(
+            'tell me to activate\n'
+            'set fs to choose file with prompt "%s" with multiple selections allowed\n'
+            'set out to ""\n'
+            'repeat with f in fs\n'
+            'set out to out & POSIX path of f & linefeed\n'
+            'end repeat\n'
+            'return out' % titel.replace('"', ""))
+    elif SYSTEM == "windows":
+        aus = powershell(
+            "Add-Type -AssemblyName System.Windows.Forms\n"
+            "$f = New-Object System.Windows.Forms.Form -Property @{TopMost = $true}\n"
+            "$d = New-Object System.Windows.Forms.OpenFileDialog\n"
+            "$d.Multiselect = $true\n"
+            "$d.Title = %s\n"
+            "$d.Filter = %s\n"
+            "if ($d.ShowDialog($f) -eq [System.Windows.Forms.DialogResult]::OK) "
+            "{ $d.FileNames -join \"`n\" }" %
+            (_ps(titel), _ps("Tabellen|%s|Alle Dateien|*.*" % _ENDUNGEN)))
+    else:
+        aus = zenity(["--file-selection", "--multiple", "--separator=\n", "--title", titel])
+    return [p.strip() for p in (aus or "").splitlines() if p.strip()]
+
+
+def ordner_dialog(titel):
+    """Systemdialog zur Ordnerauswahl -> Pfad oder None."""
+    if SYSTEM == "mac":
+        aus = osascript('tell me to activate\n'
+                        'return POSIX path of (choose folder with prompt "%s")' %
+                        titel.replace('"', ""))
+    elif SYSTEM == "windows":
+        aus = powershell(
+            "Add-Type -AssemblyName System.Windows.Forms\n"
+            "$f = New-Object System.Windows.Forms.Form -Property @{TopMost = $true}\n"
+            "$d = New-Object System.Windows.Forms.FolderBrowserDialog\n"
+            "$d.Description = %s\n"
+            "if ($d.ShowDialog($f) -eq [System.Windows.Forms.DialogResult]::OK) "
+            "{ $d.SelectedPath }" % _ps(titel))
+    else:
+        aus = zenity(["--file-selection", "--directory", "--title", titel])
+    aus = (aus or "").strip()
+    if not aus:
+        return None
+    return aus.rstrip("/") if len(aus) > 1 else aus
+
+
+def im_dateimanager_zeigen(pfad):
+    if SYSTEM == "mac":
+        subprocess.run(["open", "-R", pfad])
+    elif SYSTEM == "windows":
+        subprocess.run(["explorer", "/select,", pfad])
+    else:
+        subprocess.run(["xdg-open", os.path.dirname(pfad)])
+
+
+AUTOSTART_NAME = "de.tabularium.app"
+
+
+def _autostart_plist():
+    return os.path.expanduser("~/Library/LaunchAgents/%s.plist" % AUTOSTART_NAME)
+
+
+def autostart_aktiv():
+    if not app_modus():
+        return None
+    if SYSTEM == "mac":
+        return os.path.exists(_autostart_plist())
+    if SYSTEM == "windows":
+        import winreg
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                                r"Software\Microsoft\Windows\CurrentVersion\Run") as k:
+                winreg.QueryValueEx(k, "Tabularium")
+                return True
+        except OSError:
+            return False
+    return None
+
+
+def autostart_setzen(an):
+    """Startet Tabularium bei der Anmeldung im Hintergrund (ohne Browser)."""
+    if not app_modus() or SYSTEM == "linux":
+        raise tabularium.ArchivFehler("Autostart gibt es nur in der installierten App.")
+    if SYSTEM == "mac":
+        pfad = _autostart_plist()
+        if an:
+            os.makedirs(os.path.dirname(pfad), exist_ok=True)
+            with open(pfad, "wb") as f:
+                plistlib.dump({"Label": AUTOSTART_NAME,
+                               "ProgramArguments": [sys.executable, "--hintergrund"],
+                               "RunAtLoad": True}, f)
+        elif os.path.exists(pfad):
+            os.remove(pfad)
+    else:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            r"Software\Microsoft\Windows\CurrentVersion\Run", 0,
+                            winreg.KEY_SET_VALUE) as k:
+            if an:
+                winreg.SetValueEx(k, "Tabularium", 0, winreg.REG_SZ,
+                                  '"%s" --hintergrund' % sys.executable)
+            else:
+                try:
+                    winreg.DeleteValue(k, "Tabularium")
+                except OSError:
+                    pass
 
 
 def kandidaten(ordner, rekursiv):
@@ -230,6 +385,9 @@ def api_status(z, q, daten):
         "ueberwachung": [dict(o, kurz=kurzpfad(o.get("pfad"))) for o in e.get("ueberwachte_ordner", [])],
         "protokoll": list(z.protokoll)[:60],
         "pruefung": z.letzte_pruefung,
+        "system": SYSTEM, "dateimanager": DATEIMANAGER,
+        "app": app_modus(), "autostart": autostart_aktiv(),
+        "version": tabularium.VERSION,
     }
 
 
@@ -342,25 +500,19 @@ def api_hochladen(z, q, daten, kopf):
 
 
 def api_datei_waehlen(z, q, daten):
-    aus = osascript(
-        'tell me to activate\n'
-        'set fs to choose file with prompt "Tabelle(n) zum Sichern wählen" '
-        'with multiple selections allowed\n'
-        'set out to ""\n'
-        'repeat with f in fs\n'
-        'set out to out & POSIX path of f & linefeed\n'
-        'end repeat\n'
-        'return out')
-    pfade = [p for p in (aus or "").splitlines() if p.strip()]
+    pfade = datei_dialog("Tabelle(n) zum Sichern wählen")
     ok = [p for p in pfade if os.path.splitext(p)[1].lower() in tabularium.ALLE_FORMATE]
     return {"pfade": ok, "abgelehnt": [os.path.basename(p) for p in pfade if p not in ok]}
 
 
 def api_ordner_waehlen(z, q, daten):
-    aus = osascript('tell me to activate\n'
-                    'return POSIX path of (choose folder with prompt "%s")' %
-                    daten.get("titel", "Ordner wählen").replace('"', ""))
-    return {"pfad": aus.strip().rstrip("/") if aus else None}
+    return {"pfad": ordner_dialog(daten.get("titel", "Ordner wählen"))}
+
+
+def api_autostart(z, q, daten):
+    autostart_setzen(bool(daten.get("aktiv")))
+    z.log("Autostart %s" % ("eingeschaltet" if daten.get("aktiv") else "ausgeschaltet"))
+    return {"ok": True, "aktiv": autostart_aktiv()}
 
 
 def api_pruefen(z, q, daten):
@@ -417,7 +569,7 @@ def api_finder(z, q, daten):
     bekannt = {v[-1].get("quelle") for v in z.archiv.dokumente().values()}
     if pfad not in bekannt or not os.path.exists(pfad):
         raise tabularium.ArchivFehler("Datei nicht gefunden.")
-    subprocess.run(["open", "-R", pfad])
+    im_dateimanager_zeigen(pfad)
     return {"ok": True}
 
 
@@ -440,7 +592,8 @@ POST_ROUTEN = {"/api/einchecken": api_einchecken, "/api/datei-waehlen": api_date
                "/api/ordner-waehlen": api_ordner_waehlen, "/api/pruefen": api_pruefen,
                "/api/einstellungen": api_einstellungen,
                "/api/ueberwachung": api_ueberwachung, "/api/archiv": api_archiv,
-               "/api/finder": api_finder, "/api/zeitstempel": api_zeitstempel}
+               "/api/finder": api_finder, "/api/zeitstempel": api_zeitstempel,
+               "/api/autostart": api_autostart}
 
 
 # --------------------------------------------------------------------------
@@ -475,6 +628,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Tabularium-Benutzer", BENUTZER)
         for k, v in (kopf or {}).items():
             self.send_header(k, v)
         self.end_headers()
@@ -529,6 +683,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.senden(413, {"fehler": "Datei zu groß (max. 300 MB)."})
         roh = self.rfile.read(laenge) if laenge else b""
         try:
+            if u.path == "/api/beenden":
+                self.z.log("Tabularium wird beendet")
+                self.senden(200, {"ok": True})
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
+                return None
             if u.path == "/api/hochladen":
                 return self.senden(200, api_hochladen(self.z, {}, roh, self.headers))
             fn = POST_ROUTEN.get(u.path)
@@ -560,23 +719,35 @@ class Handler(BaseHTTPRequestHandler):
 # Start
 # --------------------------------------------------------------------------
 
-def laeuft_schon(port):
-    try:
-        with urllib.request.urlopen("http://127.0.0.1:%d/favicon.ico" % port, timeout=1) as r:
-            return r.headers.get("Server", "").startswith("Tabularium")
-    except Exception:
-        return False
+# Kennung des Benutzerkontos: Ein Doppelklick soll nie die Sitzung eines anderen
+# Benutzers auf demselben Rechner öffnen.
+BENUTZER = hashlib.sha256((getpass.getuser() + "|" + os.path.expanduser("~"))
+                          .encode("utf-8")).hexdigest()[:16]
+PORTBEREICH = 20
+
+
+def laeuft_auf(port=STANDARD_PORT):
+    """URL eines laufenden Tabularium-Servers dieses Benutzers oder None."""
+    for p in range(port, port + PORTBEREICH):
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:%d/favicon.ico" % p,
+                                        timeout=0.5) as r:
+                if r.headers.get("X-Tabularium-Benutzer") == BENUTZER:
+                    return "http://127.0.0.1:%d/" % p
+        except Exception:
+            continue
+    return None
 
 
 def starten(archiv=None, port=STANDARD_PORT, browser=True):
-    if laeuft_schon(port):
-        url = "http://127.0.0.1:%d/" % port
-        print("Der Tabularium läuft bereits: %s" % url)
+    url = laeuft_auf(port)
+    if url:
+        print("Tabularium läuft bereits: %s" % url)
         if browser:
             webbrowser.open(url)
         return 0
     server = None
-    for p in range(port, port + 20):
+    for p in range(port, port + PORTBEREICH):
         try:
             server = ThreadingHTTPServer(("127.0.0.1", p), Handler)
             port = p
@@ -593,7 +764,8 @@ def starten(archiv=None, port=STANDARD_PORT, browser=True):
     url = "http://127.0.0.1:%d/" % port
     print("Tabularium läuft: %s" % url)
     print("Archiv: %s" % z.archiv.wurzel)
-    print("Dieses Fenster offen lassen. Beenden mit Ctrl+C oder Fenster schließen.")
+    if not app_modus():
+        print("Dieses Fenster offen lassen. Beenden mit Ctrl+C oder Fenster schließen.")
     if browser:
         threading.Timer(0.6, webbrowser.open, args=(url,)).start()
     try:

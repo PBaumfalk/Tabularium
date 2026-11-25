@@ -9,8 +9,8 @@ Sekunden.
 
 1. Tabularium starten ([Kapitel 2](02-installation.md)).
 2. Die Tabelle auswählen. Dafür gibt es zwei Wege:
-   - **Datei auswählen …** öffnet den Mac-Dateidialog. Sie können mehrere
-     Dateien auf einmal wählen (⌘ gedrückt halten).
+   - **Datei auswählen …** öffnet den Dateidialog von macOS bzw. Windows. Sie
+     können mehrere Dateien auf einmal wählen (⌘ bzw. Strg gedrückt halten).
    - **Hineinziehen:** Die Datei aus dem Finder in das gestrichelte Feld ziehen.
 3. Die Datei erscheint unter dem Feld. Tragen Sie eine **Notiz** ein, die
    erklärt, warum Sie diesen Stand sichern, zum Beispiel „Monatsabschluss
@@ -30,7 +30,7 @@ gesichert (Erstfassung)“*, und das Dokument steht in der Liste rechts.
 | Anzeige „geändert – nicht gesichert“ | ✔ | – |
 | „Jetzt sichern“ mit einem Klick | ✔ | – |
 | „Mit aktueller Datei vergleichen“ | ✔ | – |
-| Funktioniert auch unter Linux | – | ✔ |
+| Funktioniert ohne Systemdialog (z. B. Linux ohne zenity) | – | ✔ |
 
 Browser verraten aus Datenschutzgründen nicht, wo eine hineingezogene Datei
 liegt. Tabularium sichert sie trotzdem vollständig, kann sie aber später nicht

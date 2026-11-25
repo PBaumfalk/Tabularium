@@ -18,7 +18,7 @@ Vorkenntnisse sind nicht nötig. Kapitel für Administratoren und IT sind mit
 | Kapitel | Inhalt |
 | --- | --- |
 | [1 — Was ist Tabularium?](01-was-ist-tabularium.md) | Grundbegriffe einfach erklärt: Fassung, Fingerabdruck, Kette, Zeitstempel, revisionssicher. |
-| [2 — Installation](02-installation.md) | Tabularium auf dem Mac einrichten und starten, unter Linux für IT, aktualisieren. |
+| [2 — Installation](02-installation.md) | Tabularium auf Mac und Windows installieren, beim ersten Start bestätigen, Autostart, aktualisieren. |
 | [3 — Die erste Fassung sichern](03-erste-fassung.md) | Eine Tabelle in 30 Sekunden ins Archiv bringen, mit Notiz und Namen. |
 | [4 — Verlauf und Zellvergleich](04-verlauf-und-vergleich.md) | Alle Fassungen ansehen, zwei Fassungen vergleichen, die aktuelle Datei prüfen. |
 | [5 — Ordner überwachen](05-ordner-ueberwachen.md) | Jede gespeicherte Änderung automatisch sichern lassen. |
@@ -44,7 +44,7 @@ Vorkenntnisse sind nicht nötig. Kapitel für Administratoren und IT sind mit
 
 ## Schnelleinstieg in fünf Schritten
 
-1. Doppelklick auf **`Tabularium.command`**. Tabularium öffnet sich im Browser
+1. Tabularium installieren und starten. Es öffnet sich im Browser
    ([Installation](02-installation.md)).
 2. Eine Tabelle in das Feld **Fassung sichern** ziehen oder **Datei auswählen …**
    klicken ([Kapitel 3](03-erste-fassung.md)).

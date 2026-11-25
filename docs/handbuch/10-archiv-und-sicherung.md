@@ -42,6 +42,11 @@ Die Sperren funktionieren auf APFS- und HFS+-Laufwerken. Auf Netzlaufwerken
 (SMB) und exFAT-Sticks gibt es sie nicht. Tabularium arbeitet dort trotzdem,
 nur ohne diese zusätzliche Schicht.
 
+**Unter Windows** gibt es diese Sperren nicht. Tabularium setzt dort für die
+Archivdateien das Attribut *Schreibgeschützt*. Das verhindert versehentliches
+Überschreiben, aber kein Löschen. Umso wichtiger sind Zeitstempel und eine
+Kopie auf WORM-Speicher.
+
 ## Das Archiv woanders ablegen
 
 **Oberfläche:** Einstellungen → Archiv → **Anderen Archiv-Ordner wählen …**.
@@ -90,13 +95,17 @@ Prüfung grün, ist das Archiv vollständig und unverändert.
 
 ## Archiv löschen
 
-Wegen der Sperren lässt sich der Ordner nicht einfach in den Papierkorb legen.
-Im Terminal:
+**Mac:** Wegen der Sperren lässt sich der Ordner nicht einfach in den
+Papierkorb legen. Im Terminal:
 
 ```bash
 chflags -R nouchg,nouappnd ~/Tabularium/.tabularium
 rm -rf ~/Tabularium/.tabularium
 ```
+
+**Windows:** Tabularium beenden, den Ordner `Tabularium` in Ihrem
+Benutzerordner im Explorer löschen und die Rückfrage zu schreibgeschützten
+Dateien bestätigen.
 
 Prüfen Sie vorher Aufbewahrungsfristen. Für Geschäftsunterlagen gelten oft
 sechs bis zehn Jahre (§ 147 AO, § 257 HGB), für Handakten von Rechtsanwälten

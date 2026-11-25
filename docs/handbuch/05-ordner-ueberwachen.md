@@ -29,9 +29,11 @@ kennt oder die sich seit der letzten Fassung geändert haben.
 
 ## Gut zu wissen
 
-- **Nur solange Tabularium läuft.** Ist das Terminalfenster geschlossen, wird
-  nichts gesichert. Beim nächsten Start holt Tabularium Änderungen nach, aber
-  nur den dann aktuellen Stand, nicht jede Zwischenstufe.
+- **Nur solange Tabularium läuft.** Ist Tabularium beendet, wird nichts
+  gesichert. Beim nächsten Start holt es Änderungen nach, aber nur den dann
+  aktuellen Stand, nicht jede Zwischenstufe. Schalten Sie deshalb unter
+  **Einstellungen → Programm** den Start **bei der Anmeldung** ein
+  ([Kapitel 2](02-installation.md#d-bei-der-anmeldung-starten)).
 - **Jedes Speichern ergibt eine Fassung.** Wer alle zwei Minuten ⌘S drückt,
   erzeugt viele Fassungen. Das schadet nicht, die Liste wird nur länger.
 - **Sperrdateien werden ignoriert.** Excel legt beim Öffnen Dateien wie

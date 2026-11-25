@@ -89,7 +89,7 @@ suchen, hilft das Suchfeld.
 
 | Knopf | Wirkung |
 | --- | --- |
-| **Im Finder zeigen** | Öffnet den Speicherort der Originaldatei (nur bei Mac und „Datei auswählen …“) |
+| **Im Finder zeigen** bzw. **Im Explorer zeigen** | Öffnet den Speicherort der Originaldatei (nur bei „Datei auswählen …“) |
 | **Prüfbericht** | Öffnet den Bericht für dieses Dokument in einem neuen Tab ([Kapitel 6](06-pruefen-und-pruefbericht.md)) |
 | **Diese Fassung herunterladen** | Lädt die gewählte Fassung byte-genau herunter ([Kapitel 8](08-wiederherstellen.md)) |
 
